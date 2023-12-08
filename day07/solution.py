@@ -49,17 +49,15 @@ class Hand:
         raise ValueError("Invalid hand")
 
     def __lt__(self, other: Hand) -> bool:
-        if self.label < other.label:
-            return True
-        if self.label > other.label:
-            return False
+        if self.label != other.label:
+            return self.label < other.label
 
         for i, j in zip(self.cards, other.cards):
-            if order.index(i) < order.index(j):
-                return False
-            if order.index(i) > order.index(j):
-                return True
-        raise ValueError("Hands are equal")
+            if order.index(i) == order.index(j):
+                continue
+            return order.index(i) > order.index(j)
+
+        raise ValueError("Invalid hand")
 
 
 with open("day07/input.txt") as f:
