@@ -1,120 +1,61 @@
+from itertools import chain, zip_longest
+
 with open("day14/input.txt") as f:
     lines = f.read().splitlines()
     lines = [list(line) for line in lines]
     height = len(lines)
     width = len(lines[0])
 
-rock_positions = []
-unmovable = set()
 
-for y in range(height):
-    for x in range(width):
-        if lines[y][x] == "O":
-            rock_positions.append((x, y))
-        if lines[y][x] == "#":
-            unmovable.add((x, y))
+def rotate(lines):
+    return list(zip(*reversed(lines)))
+
+
+# Insane shift just for fun
+def shift_north(rocks):
+    return list(
+        zip(
+            *[
+                list(
+                    chain(
+                        *chain(
+                            *zip_longest(
+                                map(lambda x: sorted(x, reverse=True), "".join(col).split("#")), [], fillvalue="#"
+                            )
+                        )
+                    )
+                )[:-1]
+                for col in zip(*rocks)
+            ]
+        ),
+    )
 
 
 def get_load(rocks):
-    return sum([height - y for _, y in rocks])
-
-
-def print_rocks(rocks, unmovable):
-    for y in range(height):
-        line = []
-        for x in range(width):
-            if (x, y) in unmovable:
-                line.append("#")
-            elif (x, y) in rocks:
-                line.append("O")
-            else:
-                line.append(".")
-        print("".join(line))
-
-
-def shift_north(rocks):
-    new_positions = []
-    for x, y in rocks:
-        end = 0
-        for s in range(y, -1, -1):
-            if (x, s) in unmovable:
-                end = s + 1
-                break
-
-        path = [(x, s) for s in range(end, y)]
-        rocks_between = sum([1 for (a, b) in path if (a, b) in rocks])
-
-        pos = end + rocks_between
-        new_positions.append((x, pos))
-
-    return new_positions
-
-
-def shift_south(rocks):
-    new_positions = []
-    for x, y in rocks:
-        end = height - 1
-        for s in range(y, height):
-            if (x, s) in unmovable:
-                end = s - 1
-                break
-
-        path = [(x, s) for s in range(y + 1, end + 1)]
-        rocks_between = sum([1 for (a, b) in path if (a, b) in rocks])
-
-        pos = end - rocks_between
-        new_positions.append((x, pos))
-
-    return new_positions
-
-
-def shift_west(rocks):
-    new_positions = []
-    for x, y in rocks:
-        end = 0
-        for s in range(x, -1, -1):
-            if (s, y) in unmovable:
-                end = s + 1
-                break
-
-        path = [(s, y) for s in range(end, x)]
-        rocks_between = sum([1 for (a, b) in path if (a, b) in rocks])
-
-        pos = end + rocks_between
-        new_positions.append((pos, y))
-
-    return new_positions
-
-
-def shift_east(rocks):
-    new_positions = []
-    for x, y in rocks:
-        end = width - 1
-        for s in range(x, width):
-            if (s, y) in unmovable:
-                end = s - 1
-                break
-
-        path = [(s, y) for s in range(x + 1, end + 1)]
-        rocks_between = sum([1 for (a, b) in path if (a, b) in rocks])
-
-        pos = end - rocks_between
-        new_positions.append((pos, y))
-
-    return new_positions
+    load = 0
+    for y, row in enumerate(rocks):
+        for col in row:
+            if col == "O":
+                load += height - y
+    return load
 
 
 # Part 1
-# rock_positions = shift_north(rock_positions)
-# print(get_load(rock_positions))
+# print(get_load(shift_north(lines)))
 
 
 # Part 2
-def shift_all(rocks):
+def semi_cycle(rocks):
     rocks = shift_north(rocks)
-    rocks = shift_west(rocks)
-    rocks = shift_south(rocks)
-    rocks = shift_east(rocks)
+    rocks = rotate(rocks)
+    return rocks
+
+
+def cycle(rocks):
+    rocks = semi_cycle(rocks)
+    rocks = semi_cycle(rocks)
+    rocks = semi_cycle(rocks)
+    rocks = semi_cycle(rocks)
 
     return rocks
 
@@ -127,7 +68,7 @@ while True:
     if i == cycles:
         break
 
-    h = hash(tuple(rock_positions))
+    h = hash(tuple(map(tuple, lines)))
 
     # We reached a cycle, we can fast forward
     if h in hashes and not cycled:
@@ -140,9 +81,9 @@ while True:
         continue
 
     hashes[h] = i
-    rock_positions = shift_all(rock_positions)
+    lines = cycle(lines)
 
     i += 1
 
 
-print(get_load(rock_positions))
+print(get_load(lines))
