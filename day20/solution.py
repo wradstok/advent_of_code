@@ -2,6 +2,7 @@ from __future__ import annotations
 from collections import deque
 from enum import Enum
 from abc import ABC, abstractmethod
+from math import lcm
 
 
 class Pulse(Enum):
@@ -41,24 +42,21 @@ class Broadcast(Module):
 
 
 class FlipFlop(Module):
-    state: str
+    state: bool
 
     def __init__(self, label: str):
         self.label = label
         self.outputs = []
-        self.state = "OFF"
+        self.state = False
 
     def receive(self, value: Pulse, queue: deque, from_module: str):
         print(f"{from_module} -{value}-> {self.label} ")
         if value == Pulse.LOW:
             queue.append(self)
-            if self.state == "OFF":
-                self.state = "ON"
-            else:
-                self.state = "OFF"
+            self.state = not self.state
 
     def send(self, queue: deque, pulses: dict[Pulse, int]):
-        pulse = Pulse.HIGH if self.state == "ON" else Pulse.LOW
+        pulse = Pulse.HIGH if self.state else Pulse.LOW
         pulses[pulse] += len(self.outputs)
 
         for module in self.outputs:
@@ -78,7 +76,7 @@ class Conjunction(Module):
         self.prev_values[from_module] = value
         queue.append(self)
 
-    def send(self, queue: deque, pulses: dict[Pulse, int]):
+    def send(self, queue: deque, pulses: dict[Pulse, int]) -> Pulse:
         pulse = Pulse.HIGH
         if all(value == Pulse.HIGH for value in self.prev_values.values()):
             pulse = pulse.LOW
@@ -86,6 +84,8 @@ class Conjunction(Module):
         for module in self.outputs:
             module.receive(pulse, queue, self.label)
         pulses[pulse] += len(self.outputs)
+
+        return pulse
 
 
 modules = dict()
@@ -130,14 +130,51 @@ for module in modules.values():
 
 # Part 1
 pulses: dict[Pulse, int] = {Pulse.LOW: 0, Pulse.HIGH: 0}
-presses = 1000
-for i in range(presses):
+# presses = 1000
+# for i in range(presses):
+#     actions: deque[Module] = deque()
+#     modules["broadcaster"].receive(Pulse.LOW, actions, "button")
+#     pulses[Pulse.LOW] += 1
+
+#     while actions:
+#         module = actions.popleft()
+#         module.send(actions, pulses)
+
+# print(pulses[Pulse.HIGH] * pulses[Pulse.LOW])
+
+# Part 2
+
+#                         &zh
+
+#                         |    |   |   |  <- high
+#                         &ns &bh &dl &vd
+#                         |    |   |   |  <- low
+#                         &dj &zp &bz &nx
+#  -   -   -   -   -   /  |
+# %xx %rb %vr %nt %lt %df %vp
+#  |
+# %mb
+#  |   \
+# %vr -> &dj
+#  |
+# &dj
+
+presses = 0
+
+cycles = {"ns": 0, "bh": 0, "dl": 0, "vd": 0}
+while True:
+    presses += 1
     actions: deque[Module] = deque()
     modules["broadcaster"].receive(Pulse.LOW, actions, "button")
-    pulses[Pulse.LOW] += 1
 
     while actions:
         module = actions.popleft()
-        module.send(actions, pulses)
+        res = module.send(actions, pulses)
 
-print(pulses[Pulse.HIGH] * pulses[Pulse.LOW])
+        if module.label in cycles.keys() and not cycles[module.label] and res == Pulse.HIGH:
+            cycles[module.label] = presses
+
+    if all(cycles.values()):
+        break
+
+print(lcm(*cycles.values()))
