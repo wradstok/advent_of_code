@@ -2,7 +2,7 @@
 name = "aoc2023"
 version = "0.1.0"
 description = "Advent of Code 2023"
-authors = ["Wessel Radstok <wesse.radstok@gmail.com>"]
+authors = ["Wessel Radstok <wessel.radstok@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "~3.12"

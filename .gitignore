@@ -1,3 +1,7 @@
+*input.txt
+.DS_Store
+.vscode/
+
 .python-version
 .azurite/
 
