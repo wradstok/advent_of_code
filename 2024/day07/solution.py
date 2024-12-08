@@ -12,7 +12,7 @@ with open("2024/day07/input.txt") as f:
 ops = ["*", "+", "||"]
 calibration = 0
 for target, vals in zip(targets, values):
-    options = list(product(ops, repeat=len(vals) - 1))
+    options = product(ops, repeat=len(vals) - 1)
 
     for option in options:
         res = vals[0]
